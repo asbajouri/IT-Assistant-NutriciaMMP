@@ -306,7 +306,9 @@ export default function ITAssistant() {
         }),
       });
       const data = await response.json();
-      const reply = data.choices?.[0]?.message?.content || "خطا در دریافت پاسخ";
+      let reply = data.choices?.[0]?.message?.content || "خطا در دریافت پاسخ";
+      // حذف کاراکترهای چینی، ژاپنی، کره‌ای
+      reply = reply.replace(/[\u3000-\u9fff\uac00-\ud7af\u3040-\u30ff]/g, "");
       setMessages([...newMessages, { role: "assistant", content: reply }]);
     } catch {
       setMessages([...newMessages, { role: "assistant", content: "⚠️ خطا در اتصال. لطفاً دوباره تلاش کنید." }]);
