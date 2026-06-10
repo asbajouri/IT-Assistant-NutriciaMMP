@@ -2,7 +2,19 @@ import { useState, useRef, useEffect } from "react";
 
 const GROQ_API_KEY = "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";
 const ADMIN_PASSWORD = "Sb@332211";
-const STORAGE_KEY = "it_assistant_custom_qa";
+const STORAGE_KEY_QA = "it_assistant_custom_qa";
+const STORAGE_KEY_BUTTONS = "it_assistant_buttons";
+
+const DEFAULT_BUTTONS = [
+  { label: "تغییر پسورد دامین", q: "چطور پسورد دامین danonemulti.net رو عوض کنم؟" },
+  { label: "پسورد فراموش شده", q: "پسورد دامینم رو فراموش کردم چیکار کنم؟" },
+  { label: "مشکل اینترنت", q: "اینترنتم وصل نیست، چیکار کنم؟" },
+  { label: "فریز Excel", q: "چطور ردیف اول Excel رو فریز کنم؟" },
+  { label: "Out of Office", q: "چطور پیام Out of Office در Outlook تنظیم کنم؟" },
+  { label: "اکتیو ویندوز KMS", q: "چطور ویندوز رو با KMS شرکت اکتیو کنم؟" },
+  { label: "اکتیو Office KMS", q: "چطور Office رو با KMS شرکت اکتیو کنم؟" },
+  { label: "درخواست IT", q: "می‌خوام یه نرم‌افزار جدید نصب بشه، چیکار کنم؟" },
+];
 
 const BASE_KNOWLEDGE = `تو یک دستیار هوش مصنوعی متخصص IT هستی که برای پشتیبانی کارکنان شرکت Nutricia-mmp طراحی شده‌ای.
 
@@ -30,6 +42,34 @@ const BASE_KNOWLEDGE = `تو یک دستیار هوش مصنوعی متخصص IT
 - پرینترهای شبکه: از طریق پرینت سرور دامین
 - ایمیل: از طریق Outlook با اکانت دامین
 - برای دسترسی به منابع جدید: درخواست IT ثبت کنید
+
+=== اکتیو کردن ویندوز با KMS داخلی شرکت ===
+سرور KMS شرکت: kms.danonemulti.net
+دستورات را در CMD به عنوان Administrator اجرا کنید:
+slmgr /skms kms.danonemulti.net
+slmgr /ato
+برای بررسی وضعیت لایسنس: slmgr /dli
+
+=== اکتیو کردن Office با KMS داخلی شرکت ===
+سرور KMS شرکت: kms.danonemulti.net
+دستورات را در CMD به عنوان Administrator اجرا کنید:
+
+Office 2010:
+cd "C:\\Program Files\\Microsoft Office\\Office14"
+cscript ospp.vbs /sethst:kms.danonemulti.net
+cscript ospp.vbs /act
+
+Office 2013:
+cd "C:\\Program Files\\Microsoft Office\\Office15"
+cscript ospp.vbs /sethst:kms.danonemulti.net
+cscript ospp.vbs /act
+
+Office 2016 و 2019:
+cd "C:\\Program Files\\Microsoft Office\\Office16"
+cscript ospp.vbs /sethst:kms.danonemulti.net
+cscript ospp.vbs /act
+
+نکته مهم: CMD را حتماً با Run as Administrator اجرا کنید
 
 === ویندوز 10 و 11 ===
 - Task Manager: Ctrl+Shift+Esc
@@ -70,37 +110,6 @@ const BASE_KNOWLEDGE = `تو یک دستیار هوش مصنوعی متخصص IT
 - DNS مشکل: تغییر DNS به 8.8.8.8
 - Ping: ping 8.8.8.8 در CMD
 
-=== اکتیو کردن ویندوز با KMS داخلی شرکت ===
-سرور KMS شرکت: kms.danonemulti.net
-دستورات را در CMD به عنوان Administrator اجرا کنید:
-
-slmgr /skms kms.danonemulti.net
-slmgr /ato
-
-برای بررسی وضعیت لایسنس: slmgr /dli
-
-=== اکتیو کردن Office با KMS داخلی شرکت ===
-سرور KMS شرکت: kms.danonemulti.net
-دستورات را در CMD به عنوان Administrator اجرا کنید:
-
-Office 2010:
-cd "C:\\Program Files\\Microsoft Office\\Office14"
-cscript ospp.vbs /sethst:kms.danonemulti.net
-cscript ospp.vbs /act
-
-Office 2013:
-cd "C:\\Program Files\\Microsoft Office\\Office15"
-cscript ospp.vbs /sethst:kms.danonemulti.net
-cscript ospp.vbs /act
-
-Office 2016 و 2019:
-cd "C:\\Program Files\\Microsoft Office\\Office16"
-cscript ospp.vbs /sethst:kms.danonemulti.net
-cscript ospp.vbs /act
-
-نکته مهم: CMD را حتماً با Run as Administrator اجرا کنید
-نکته: اگر Office در درایو دیگری نصب شده مسیر را تغییر دهید
-
 === درخواست‌های IT ===
 برای درخواست‌های IT (نصب نرم‌افزار، تعمیر، دسترسی جدید):
 1. با IT Support تماس بگیرید
@@ -109,60 +118,72 @@ cscript ospp.vbs /act
 
 همیشه مودب، صبور و حرفه‌ای باش.`;
 
-const QUICK_QUESTIONS = [
-  { label: "تغییر پسورد دامین", q: "چطور پسورد دامین danonemulti.net رو عوض کنم؟" },
-  { label: "پسورد فراموش شده", q: "پسورد دامینم رو فراموش کردم چیکار کنم؟" },
-  { label: "مشکل اینترنت", q: "اینترنتم وصل نیست، چیکار کنم؟" },
-  { label: "فریز Excel", q: "چطور ردیف اول Excel رو فریز کنم؟" },
-  { label: "Out of Office", q: "چطور پیام Out of Office در Outlook تنظیم کنم؟" },
-  { label: "اکتیو ویندوز KMS", q: "چطور ویندوز رو با KMS شرکت اکتیو کنم؟" },
-  { label: "اکتیو Office KMS", q: "چطور Office رو با KMS شرکت اکتیو کنم؟" },
-];
-
-function loadCustomQA() {
+function loadData(key, fallback) {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch { return []; }
+    const d = localStorage.getItem(key);
+    return d ? JSON.parse(d) : fallback;
+  } catch { return fallback; }
 }
 
-function saveCustomQA(qa) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(qa)); } catch {}
+function saveData(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 }
 
 function AdminPanel({ onClose }) {
-  const [qaList, setQaList] = useState(loadCustomQA());
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState("");
-  const [editIndex, setEditIndex] = useState(null);
+  const [tab, setTab] = useState("buttons");
+  const [buttons, setButtons] = useState(loadData(STORAGE_KEY_BUTTONS, DEFAULT_BUTTONS));
+  const [qaList, setQaList] = useState(loadData(STORAGE_KEY_QA, []));
+
+  // Buttons state
+  const [btnLabel, setBtnLabel] = useState("");
+  const [btnQ, setBtnQ] = useState("");
+  const [btnEditIdx, setBtnEditIdx] = useState(null);
+
+  // QA state
+  const [qaQ, setQaQ] = useState("");
+  const [qaA, setQaA] = useState("");
+  const [qaEditIdx, setQaEditIdx] = useState(null);
   const [msg, setMsg] = useState("");
 
-  const handleSave = () => {
-    if (!question.trim() || !answer.trim()) { setMsg("سوال و جواب را پر کنید"); return; }
-    let updated;
-    if (editIndex !== null) {
-      updated = qaList.map((item, i) => i === editIndex ? { question, answer } : item);
-      setEditIndex(null);
-    } else {
-      updated = [...qaList, { question, answer }];
-    }
-    setQaList(updated);
-    saveCustomQA(updated);
-    setQuestion(""); setAnswer("");
-    setMsg("✅ ذخیره شد");
-    setTimeout(() => setMsg(""), 2000);
+  const showMsg = (m) => { setMsg(m); setTimeout(() => setMsg(""), 2000); };
+
+  const saveBtn = () => {
+    if (!btnLabel.trim() || !btnQ.trim()) { showMsg("⚠️ لیبل و سوال را پر کنید"); return; }
+    const updated = btnEditIdx !== null
+      ? buttons.map((b, i) => i === btnEditIdx ? { label: btnLabel, q: btnQ } : b)
+      : [...buttons, { label: btnLabel, q: btnQ }];
+    setButtons(updated); saveData(STORAGE_KEY_BUTTONS, updated);
+    setBtnLabel(""); setBtnQ(""); setBtnEditIdx(null); showMsg("✅ ذخیره شد");
   };
 
-  const handleEdit = (i) => {
-    setQuestion(qaList[i].question);
-    setAnswer(qaList[i].answer);
-    setEditIndex(i);
+  const editBtn = (i) => { setBtnLabel(buttons[i].label); setBtnQ(buttons[i].q); setBtnEditIdx(i); };
+  const deleteBtn = (i) => { const u = buttons.filter((_, idx) => idx !== i); setButtons(u); saveData(STORAGE_KEY_BUTTONS, u); };
+  const resetButtons = () => { setButtons(DEFAULT_BUTTONS); saveData(STORAGE_KEY_BUTTONS, DEFAULT_BUTTONS); showMsg("✅ به حالت پیش‌فرض برگشت"); };
+
+  const saveQA = () => {
+    if (!qaQ.trim() || !qaA.trim()) { showMsg("⚠️ سوال و جواب را پر کنید"); return; }
+    const updated = qaEditIdx !== null
+      ? qaList.map((item, i) => i === qaEditIdx ? { question: qaQ, answer: qaA } : item)
+      : [...qaList, { question: qaQ, answer: qaA }];
+    setQaList(updated); saveData(STORAGE_KEY_QA, updated);
+    setQaQ(""); setQaA(""); setQaEditIdx(null); showMsg("✅ ذخیره شد");
   };
 
-  const handleDelete = (i) => {
-    const updated = qaList.filter((_, idx) => idx !== i);
-    setQaList(updated);
-    saveCustomQA(updated);
+  const editQA = (i) => { setQaQ(qaList[i].question); setQaA(qaList[i].answer); setQaEditIdx(i); };
+  const deleteQA = (i) => { const u = qaList.filter((_, idx) => idx !== i); setQaList(u); saveData(STORAGE_KEY_QA, u); };
+
+  const tabStyle = (t) => ({
+    padding: "10px 20px", border: "none", cursor: "pointer",
+    fontFamily: "inherit", fontSize: 14, fontWeight: 600,
+    borderBottom: tab === t ? "3px solid #0078d4" : "3px solid transparent",
+    background: "none", color: tab === t ? "#0078d4" : "#666",
+    transition: "all 0.2s"
+  });
+
+  const inputStyle = {
+    width: "100%", padding: "10px 12px", borderRadius: 8,
+    border: "1.5px solid #ddd", marginBottom: 10,
+    fontFamily: "inherit", fontSize: 14, direction: "rtl", boxSizing: "border-box"
   };
 
   return (
@@ -171,113 +192,187 @@ function AdminPanel({ onClose }) {
       zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center"
     }}>
       <div style={{
-        background: "white", borderRadius: 12, width: "90%", maxWidth: 700,
-        maxHeight: "90vh", overflowY: "auto", padding: 24, direction: "rtl"
+        background: "white", borderRadius: 12, width: "92%", maxWidth: 720,
+        maxHeight: "92vh", overflowY: "auto", direction: "rtl",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h2 style={{ margin: 0, color: "#0078d4" }}>پنل ادمین - مدیریت سوال و جواب</h2>
+        {/* Header */}
+        <div style={{
+          padding: "16px 20px", borderBottom: "1px solid #eee",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          position: "sticky", top: 0, background: "white", zIndex: 10
+        }}>
+          <h2 style={{ margin: 0, color: "#0078d4", fontSize: 18 }}>⚙️ پنل مدیریت</h2>
           <button onClick={onClose} style={{
-            background: "none", border: "none", fontSize: 24, cursor: "pointer", color: "#666"
+            background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#666"
           }}>✕</button>
         </div>
 
-        <div style={{ background: "#f8f9fa", borderRadius: 8, padding: 16, marginBottom: 20 }}>
-          <h3 style={{ margin: "0 0 12px", color: "#333" }}>
-            {editIndex !== null ? "ویرایش سوال" : "افزودن سوال جدید"}
-          </h3>
-          <input
-            value={question}
-            onChange={e => setQuestion(e.target.value)}
-            placeholder="سوال را بنویسید..."
-            style={{
-              width: "100%", padding: "10px 12px", borderRadius: 8,
-              border: "1.5px solid #ddd", marginBottom: 10,
-              fontFamily: "inherit", fontSize: 14, direction: "rtl", boxSizing: "border-box"
-            }}
-          />
-          <textarea
-            value={answer}
-            onChange={e => setAnswer(e.target.value)}
-            placeholder="جواب را بنویسید..."
-            rows={4}
-            style={{
-              width: "100%", padding: "10px 12px", borderRadius: 8,
-              border: "1.5px solid #ddd", marginBottom: 10,
-              fontFamily: "inherit", fontSize: 14, direction: "rtl",
-              resize: "vertical", boxSizing: "border-box"
-            }}
-          />
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button onClick={handleSave} style={{
-              padding: "10px 24px", background: "#0078d4", color: "white",
-              border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14
-            }}>
-              {editIndex !== null ? "ویرایش" : "افزودن"}
-            </button>
-            {editIndex !== null && (
-              <button onClick={() => { setEditIndex(null); setQuestion(""); setAnswer(""); }} style={{
-                padding: "10px 24px", background: "#6c757d", color: "white",
-                border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14
-              }}>انصراف</button>
-            )}
-            {msg && <span style={{ color: "#28a745", fontSize: 14 }}>{msg}</span>}
-          </div>
+        {/* Tabs */}
+        <div style={{ borderBottom: "1px solid #eee", display: "flex", padding: "0 16px" }}>
+          <button style={tabStyle("buttons")} onClick={() => setTab("buttons")}>
+            🔘 دکمه‌های سریع
+          </button>
+          <button style={tabStyle("qa")} onClick={() => setTab("qa")}>
+            💬 سوال و جواب اختصاصی
+          </button>
         </div>
 
-        <h3 style={{ margin: "0 0 12px", color: "#333" }}>سوال‌های ذخیره شده ({qaList.length})</h3>
-        {qaList.length === 0 ? (
-          <p style={{ color: "#999", textAlign: "center", padding: 20 }}>هنوز سوالی اضافه نشده</p>
-        ) : (
-          qaList.map((item, i) => (
-            <div key={i} style={{
-              border: "1px solid #e0e0e0", borderRadius: 8, padding: 12,
-              marginBottom: 10, background: "white"
-            }}>
-              <div style={{ fontWeight: 600, color: "#0078d4", marginBottom: 6 }}>❓ {item.question}</div>
-              <div style={{ color: "#444", fontSize: 13, marginBottom: 10, lineHeight: 1.6 }}>💬 {item.answer}</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => handleEdit(i)} style={{
-                  padding: "6px 16px", background: "#ffc107", color: "#333",
-                  border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13
-                }}>ویرایش</button>
-                <button onClick={() => handleDelete(i)} style={{
-                  padding: "6px 16px", background: "#dc3545", color: "white",
-                  border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 13
-                }}>حذف</button>
+        <div style={{ padding: 20 }}>
+          {msg && (
+            <div style={{
+              padding: "10px 16px", borderRadius: 8, marginBottom: 16,
+              background: msg.includes("✅") ? "#d4edda" : "#fff3cd",
+              color: msg.includes("✅") ? "#155724" : "#856404", fontSize: 14
+            }}>{msg}</div>
+          )}
+
+          {/* Buttons Tab */}
+          {tab === "buttons" && (
+            <>
+              <div style={{ background: "#f8f9fa", borderRadius: 8, padding: 16, marginBottom: 20 }}>
+                <h3 style={{ margin: "0 0 12px", color: "#333", fontSize: 15 }}>
+                  {btnEditIdx !== null ? "✏️ ویرایش دکمه" : "➕ افزودن دکمه جدید"}
+                </h3>
+                <input value={btnLabel} onChange={e => setBtnLabel(e.target.value)}
+                  placeholder="متن دکمه (مثال: تغییر پسورد دامین)" style={inputStyle} />
+                <input value={btnQ} onChange={e => setBtnQ(e.target.value)}
+                  placeholder="سوالی که ارسال میشه (مثال: چطور پسورد رو عوض کنم؟)" style={inputStyle} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={saveBtn} style={{
+                    padding: "9px 20px", background: "#0078d4", color: "white",
+                    border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14
+                  }}>{btnEditIdx !== null ? "ویرایش" : "افزودن"}</button>
+                  {btnEditIdx !== null && (
+                    <button onClick={() => { setBtnEditIdx(null); setBtnLabel(""); setBtnQ(""); }} style={{
+                      padding: "9px 20px", background: "#6c757d", color: "white",
+                      border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14
+                    }}>انصراف</button>
+                  )}
+                  <button onClick={resetButtons} style={{
+                    padding: "9px 20px", background: "#fff", color: "#dc3545",
+                    border: "1px solid #dc3545", borderRadius: 8, cursor: "pointer",
+                    fontFamily: "inherit", fontSize: 14, marginRight: "auto"
+                  }}>بازگشت به پیش‌فرض</button>
+                </div>
               </div>
-            </div>
-          ))
-        )}
+
+              <h3 style={{ margin: "0 0 12px", color: "#333", fontSize: 15 }}>
+                دکمه‌های فعلی ({buttons.length})
+              </h3>
+              {buttons.map((btn, i) => (
+                <div key={i} style={{
+                  border: "1px solid #e0e0e0", borderRadius: 8, padding: "12px 14px",
+                  marginBottom: 8, background: "white", display: "flex",
+                  justifyContent: "space-between", alignItems: "center", gap: 10
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, color: "#0078d4", marginBottom: 4 }}>
+                      🔘 {btn.label}
+                    </div>
+                    <div style={{ color: "#666", fontSize: 12 }}>↪ {btn.q}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => editBtn(i)} style={{
+                      padding: "6px 14px", background: "#ffc107", color: "#333",
+                      border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12
+                    }}>ویرایش</button>
+                    <button onClick={() => deleteBtn(i)} style={{
+                      padding: "6px 14px", background: "#dc3545", color: "white",
+                      border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12
+                    }}>حذف</button>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* QA Tab */}
+          {tab === "qa" && (
+            <>
+              <div style={{ background: "#f8f9fa", borderRadius: 8, padding: 16, marginBottom: 20 }}>
+                <h3 style={{ margin: "0 0 12px", color: "#333", fontSize: 15 }}>
+                  {qaEditIdx !== null ? "✏️ ویرایش سوال و جواب" : "➕ افزودن سوال و جواب جدید"}
+                </h3>
+                <input value={qaQ} onChange={e => setQaQ(e.target.value)}
+                  placeholder="سوال را بنویسید..." style={inputStyle} />
+                <textarea value={qaA} onChange={e => setQaA(e.target.value)}
+                  placeholder="جواب را بنویسید..." rows={4} style={{ ...inputStyle, resize: "vertical" }} />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={saveQA} style={{
+                    padding: "9px 20px", background: "#0078d4", color: "white",
+                    border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14
+                  }}>{qaEditIdx !== null ? "ویرایش" : "افزودن"}</button>
+                  {qaEditIdx !== null && (
+                    <button onClick={() => { setQaEditIdx(null); setQaQ(""); setQaA(""); }} style={{
+                      padding: "9px 20px", background: "#6c757d", color: "white",
+                      border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14
+                    }}>انصراف</button>
+                  )}
+                </div>
+              </div>
+
+              <h3 style={{ margin: "0 0 12px", color: "#333", fontSize: 15 }}>
+                سوال‌های ذخیره شده ({qaList.length})
+              </h3>
+              {qaList.length === 0 ? (
+                <p style={{ color: "#999", textAlign: "center", padding: 30 }}>هنوز سوالی اضافه نشده</p>
+              ) : (
+                qaList.map((item, i) => (
+                  <div key={i} style={{
+                    border: "1px solid #e0e0e0", borderRadius: 8, padding: "12px 14px",
+                    marginBottom: 8, background: "white"
+                  }}>
+                    <div style={{ fontWeight: 600, color: "#0078d4", marginBottom: 6 }}>❓ {item.question}</div>
+                    <div style={{ color: "#444", fontSize: 13, marginBottom: 10, lineHeight: 1.6 }}>💬 {item.answer}</div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => editQA(i)} style={{
+                        padding: "6px 14px", background: "#ffc107", color: "#333",
+                        border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12
+                      }}>ویرایش</button>
+                      <button onClick={() => deleteQA(i)} style={{
+                        padding: "6px 14px", background: "#dc3545", color: "white",
+                        border: "none", borderRadius: 6, cursor: "pointer", fontFamily: "inherit", fontSize: 12
+                      }}>حذف</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 export default function ITAssistant() {
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content: "سلام! من دستیار IT شرکت Nutricia-mmp هستم 👋\nهر سوالی درباره ویندوز، دامین، آفیس، شبکه یا درخواست‌های IT دارید بپرسید.",
-    },
-  ]);
+  const [messages, setMessages] = useState([{
+    role: "assistant",
+    content: "سلام! من دستیار IT شرکت Nutricia-mmp هستم 👋\nهر سوالی درباره ویندوز، دامین، آفیس، شبکه یا درخواست‌های IT دارید بپرسید.",
+  }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [adminPass, setAdminPass] = useState("");
   const [adminError, setAdminError] = useState("");
+  const [buttons, setButtons] = useState(loadData(STORAGE_KEY_BUTTONS, DEFAULT_BUTTONS));
   const bottomRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const handleAdminClose = () => {
+    setShowAdminPanel(false);
+    setButtons(loadData(STORAGE_KEY_BUTTONS, DEFAULT_BUTTONS));
+  };
+
   const buildSystemPrompt = () => {
-    const customQA = loadCustomQA();
+    const customQA = loadData(STORAGE_KEY_QA, []);
     if (customQA.length === 0) return BASE_KNOWLEDGE;
-    const customSection = customQA.map(item =>
-      `سوال: ${item.question}\nجواب: ${item.answer}`
-    ).join("\n\n");
+    const customSection = customQA.map(item => `سوال: ${item.question}\nجواب: ${item.answer}`).join("\n\n");
     return `${BASE_KNOWLEDGE}\n\n=== سوال و جواب‌های اختصاصی شرکت ===\n${customSection}`;
   };
 
@@ -289,25 +384,20 @@ export default function ITAssistant() {
     setMessages(newMessages);
     setLoading(true);
     try {
-      const apiMessages = newMessages.map((m) => ({ role: m.role, content: m.content }));
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${GROQ_API_KEY}`,
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
           max_tokens: 1000,
           messages: [
             { role: "system", content: buildSystemPrompt() },
-            ...apiMessages,
+            ...newMessages.map(m => ({ role: m.role, content: m.content })),
           ],
         }),
       });
       const data = await response.json();
       let reply = data.choices?.[0]?.message?.content || "خطا در دریافت پاسخ";
-      // حذف کاراکترهای چینی، ژاپنی، کره‌ای
       reply = reply.replace(/[\u3000-\u9fff\uac00-\ud7af\u3040-\u30ff]/g, "");
       setMessages([...newMessages, { role: "assistant", content: reply }]);
     } catch {
@@ -319,13 +409,9 @@ export default function ITAssistant() {
 
   const handleAdminLogin = () => {
     if (adminPass === ADMIN_PASSWORD) {
-      setShowAdminLogin(false);
-      setShowAdminPanel(true);
-      setAdminPass("");
-      setAdminError("");
-    } else {
-      setAdminError("پسورد اشتباه است");
-    }
+      setShowAdminLogin(false); setShowAdminPanel(true);
+      setAdminPass(""); setAdminError("");
+    } else { setAdminError("پسورد اشتباه است"); }
   };
 
   return (
@@ -333,16 +419,13 @@ export default function ITAssistant() {
       display: "flex", flexDirection: "column", height: "100vh",
       background: "#f0f2f5", fontFamily: "'Segoe UI', Tahoma, sans-serif", direction: "rtl"
     }}>
-      {/* Header */}
       <div style={{
-        background: "linear-gradient(135deg, #0078d4, #005a9e)",
-        color: "white", padding: "16px 20px",
-        display: "flex", alignItems: "center", gap: "12px",
+        background: "linear-gradient(135deg, #0078d4, #005a9e)", color: "white",
+        padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
       }}>
         <div style={{
-          width: 42, height: 42, borderRadius: "50%",
-          background: "rgba(255,255,255,0.2)",
+          width: 42, height: 42, borderRadius: "50%", background: "rgba(255,255,255,0.2)",
           display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22
         }}>🖥️</div>
         <div>
@@ -352,22 +435,18 @@ export default function ITAssistant() {
         <button onClick={() => setShowAdminLogin(true)} style={{
           marginRight: "auto", background: "rgba(255,255,255,0.15)",
           border: "1px solid rgba(255,255,255,0.3)", color: "white",
-          padding: "6px 14px", borderRadius: 20, cursor: "pointer",
-          fontSize: 12, fontFamily: "inherit"
+          padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontFamily: "inherit"
         }}>🔐 Login</button>
       </div>
 
-      {/* Quick Questions */}
       <div style={{
-        padding: "10px 16px", background: "#fff",
-        borderBottom: "1px solid #e0e0e0",
+        padding: "10px 16px", background: "#fff", borderBottom: "1px solid #e0e0e0",
         display: "flex", gap: 8, flexWrap: "wrap"
       }}>
-        {QUICK_QUESTIONS.map((q, i) => (
+        {buttons.map((q, i) => (
           <button key={i} onClick={() => sendMessage(q.q)} style={{
-            padding: "6px 12px", borderRadius: 20,
-            border: "1px solid #0078d4", background: "white",
-            color: "#0078d4", cursor: "pointer", fontSize: 12,
+            padding: "6px 12px", borderRadius: 20, border: "1px solid #0078d4",
+            background: "white", color: "#0078d4", cursor: "pointer", fontSize: 12,
             fontFamily: "inherit", transition: "all 0.2s", whiteSpace: "nowrap"
           }}
             onMouseEnter={e => { e.target.style.background = "#0078d4"; e.target.style.color = "white"; }}
@@ -376,7 +455,6 @@ export default function ITAssistant() {
         ))}
       </div>
 
-      {/* Messages */}
       <div style={{
         flex: 1, overflowY: "auto", padding: "20px 16px",
         display: "flex", flexDirection: "column", gap: 12
@@ -389,9 +467,8 @@ export default function ITAssistant() {
           }}>
             {msg.role === "assistant" && (
               <div style={{
-                width: 32, height: 32, borderRadius: "50%",
-                background: "#0078d4", color: "white",
-                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 32, height: 32, borderRadius: "50%", background: "#0078d4",
+                color: "white", display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 16, flexShrink: 0
               }}>🖥️</div>
             )}
@@ -401,14 +478,12 @@ export default function ITAssistant() {
               background: msg.role === "user" ? "#0078d4" : "#ffffff",
               color: msg.role === "user" ? "white" : "#1a1a1a",
               boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-              fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap",
-              direction: "rtl", textAlign: "right"
+              fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-wrap", direction: "rtl", textAlign: "right"
             }}>{msg.content}</div>
             {msg.role === "user" && (
               <div style={{
-                width: 32, height: 32, borderRadius: "50%",
-                background: "#6c757d", color: "white",
-                display: "flex", alignItems: "center", justifyContent: "center",
+                width: 32, height: 32, borderRadius: "50%", background: "#6c757d",
+                color: "white", display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 16, flexShrink: 0
               }}>👤</div>
             )}
@@ -427,8 +502,7 @@ export default function ITAssistant() {
             }}>
               {[0, 1, 2].map(j => (
                 <div key={j} style={{
-                  width: 8, height: 8, borderRadius: "50%",
-                  background: "#0078d4", opacity: 0.6,
+                  width: 8, height: 8, borderRadius: "50%", background: "#0078d4", opacity: 0.6,
                   animation: `bounce 1.2s ease-in-out ${j * 0.2}s infinite`
                 }} />
               ))}
@@ -438,23 +512,18 @@ export default function ITAssistant() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div style={{
-        padding: "12px 16px", background: "#fff",
-        borderTop: "1px solid #e0e0e0",
+        padding: "12px 16px", background: "#fff", borderTop: "1px solid #e0e0e0",
         display: "flex", gap: 10, alignItems: "flex-end"
       }}>
-        <textarea
-          value={input}
-          onChange={e => setInput(e.target.value)}
+        <textarea value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-          placeholder="سوال IT خود را بنویسید..."
-          rows={1}
+          placeholder="سوال IT خود را بنویسید..." rows={1}
           style={{
-            flex: 1, padding: "10px 14px", borderRadius: 22,
-            border: "1.5px solid #d0d0d0", outline: "none", resize: "none",
-            fontFamily: "inherit", fontSize: 14, direction: "rtl", textAlign: "right",
-            lineHeight: 1.5, maxHeight: 120, overflowY: "auto", transition: "border-color 0.2s"
+            flex: 1, padding: "10px 14px", borderRadius: 22, border: "1.5px solid #d0d0d0",
+            outline: "none", resize: "none", fontFamily: "inherit", fontSize: 14,
+            direction: "rtl", textAlign: "right", lineHeight: 1.5, maxHeight: 120,
+            overflowY: "auto", transition: "border-color 0.2s"
           }}
           onFocus={e => e.target.style.borderColor = "#0078d4"}
           onBlur={e => e.target.style.borderColor = "#d0d0d0"}
@@ -468,23 +537,20 @@ export default function ITAssistant() {
         }}>➤</button>
       </div>
 
-      {/* Admin Login Modal */}
       {showAdminLogin && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
           zIndex: 999, display: "flex", alignItems: "center", justifyContent: "center"
         }}>
           <div style={{
-            background: "white", borderRadius: 12, padding: 28,
-            width: 320, direction: "rtl", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
+            background: "white", borderRadius: 12, padding: 28, width: 320,
+            direction: "rtl", boxShadow: "0 8px 32px rgba(0,0,0,0.2)"
           }}>
-            <h3 style={{ margin: "0 0 16px", color: "#0078d4" }}>ورود به پنل ادمین</h3>
-            <input
-              type="password"
-              value={adminPass}
+            <h3 style={{ margin: "0 0 16px", color: "#0078d4" }}>🔐 ورود به پنل مدیریت</h3>
+            <input type="password" value={adminPass}
               onChange={e => setAdminPass(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleAdminLogin()}
-              placeholder="پسورد ادمین..."
+              placeholder="پسورد را وارد کنید..."
               style={{
                 width: "100%", padding: "10px 12px", borderRadius: 8,
                 border: "1.5px solid #ddd", marginBottom: 8,
@@ -494,11 +560,11 @@ export default function ITAssistant() {
             {adminError && <p style={{ color: "red", margin: "0 0 8px", fontSize: 13 }}>{adminError}</p>}
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={handleAdminLogin} style={{
-                flex: 1, padding: "10px", background: "#0078d4", color: "white",
+                flex: 1, padding: 10, background: "#0078d4", color: "white",
                 border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14
               }}>ورود</button>
               <button onClick={() => { setShowAdminLogin(false); setAdminPass(""); setAdminError(""); }} style={{
-                flex: 1, padding: "10px", background: "#6c757d", color: "white",
+                flex: 1, padding: 10, background: "#6c757d", color: "white",
                 border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 14
               }}>انصراف</button>
             </div>
@@ -506,7 +572,7 @@ export default function ITAssistant() {
         </div>
       )}
 
-      {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
+      {showAdminPanel && <AdminPanel onClose={handleAdminClose} />}
 
       <style>{`
         @keyframes bounce {
