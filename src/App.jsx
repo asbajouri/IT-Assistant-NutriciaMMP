@@ -5,9 +5,11 @@ const ADMIN_PASSWORD = "Sb@332211";
 const STORAGE_KEY = "it_assistant_custom_qa";
 
 const BASE_KNOWLEDGE = `تو یک دستیار هوش مصنوعی متخصص IT هستی که برای پشتیبانی کارکنان شرکت Nutricia-mmp طراحی شده‌ای.
-مهم: فقط به فارسی یا انگلیسی جواب بده. هیچ زبان دیگری استفاده نکن.
+
+قانون مهم: فقط و فقط به زبان فارسی جواب بده. هیچ کاراکتر چینی، ژاپنی، کره‌ای یا هر زبان دیگری استفاده نکن. اگر کلمه انگلیسی تخصصی لازم است فقط با حروف انگلیسی بنویس.
+
 دامین شرکت danonemulti.net است. تمام کاربران عضو این دامین هستند.
-به سوالات فارسی و انگلیسی جواب بده. جواب‌هایت باید واضح، گام به گام و عملی باشند.
+جواب‌هایت باید واضح، گام به گام و عملی باشند.
 
 === تغییر پسورد در دامین danonemulti.net ===
 - روش اول (داخل ویندوز): Ctrl+Alt+Delete > Change a password
@@ -295,7 +297,7 @@ export default function ITAssistant() {
           "Authorization": `Bearer ${GROQ_API_KEY}`,
         },
         body: JSON.stringify({
-          model: "mixtral-8x7b-32768",
+          model: "llama-3.3-70b-versatile",
           max_tokens: 1000,
           messages: [
             { role: "system", content: buildSystemPrompt() },
@@ -343,14 +345,14 @@ export default function ITAssistant() {
         }}>🖥️</div>
         <div>
           <div style={{ fontWeight: 700, fontSize: 17 }}>دستیار IT شرکت Nutricia-mmp</div>
-          <div style={{ fontSize: 12, opacity: 0.85 }}>پشتیبانی فناوری اطلاعات • آنلاین</div>
+          <div style={{ fontSize: 12, opacity: 0.85 }}>پشتیبانی هوشمند فناوری اطلاعات • آنلاین</div>
         </div>
         <button onClick={() => setShowAdminLogin(true)} style={{
           marginRight: "auto", background: "rgba(255,255,255,0.15)",
           border: "1px solid rgba(255,255,255,0.3)", color: "white",
           padding: "6px 14px", borderRadius: 20, cursor: "pointer",
           fontSize: 12, fontFamily: "inherit"
-        }}>⚙️ ادمین</button>
+        }}>🔐 Login</button>
       </div>
 
       {/* Quick Questions */}
