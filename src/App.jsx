@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 
+const GROQ_API_KEY = "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";
+
 const IT_KNOWLEDGE_BASE = `تو یک دستیار هوش مصنوعی متخصص IT هستی که برای پشتیبانی کارکنان یک شرکت طراحی شده‌ای.
 به سوالات فارسی و انگلیسی جواب بده. جواب‌هایت باید واضح، گام به گام و عملی باشند.
 
@@ -110,19 +112,24 @@ export default function ITAssistant() {
         content: m.content,
       }));
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+        },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "llama-3.3-70b-versatile",
           max_tokens: 1000,
-          system: IT_KNOWLEDGE_BASE,
-          messages: apiMessages,
+          messages: [
+            { role: "system", content: IT_KNOWLEDGE_BASE },
+            ...apiMessages,
+          ],
         }),
       });
 
       const data = await response.json();
-      const reply = data.content?.map((c) => c.text).join("") || "خطا در دریافت پاسخ";
+      const reply = data.choices?.[0]?.message?.content || "خطا در دریافت پاسخ";
       setMessages([...newMessages, { role: "assistant", content: reply }]);
     } catch (err) {
       setMessages([...newMessages, { role: "assistant", content: "⚠️ خطا در اتصال. لطفاً دوباره تلاش کنید." }]);
@@ -144,7 +151,6 @@ export default function ITAssistant() {
       background: "#f0f2f5", fontFamily: "'Segoe UI', Tahoma, sans-serif",
       direction: "rtl"
     }}>
-      {/* Header */}
       <div style={{
         background: "linear-gradient(135deg, #0078d4, #005a9e)",
         color: "white", padding: "16px 20px",
@@ -164,7 +170,6 @@ export default function ITAssistant() {
         <div style={{ marginRight: "auto", fontSize: 12, opacity: 0.7 }}>IT Support Bot v1.0</div>
       </div>
 
-      {/* Quick Questions */}
       <div style={{
         padding: "10px 16px", background: "#fff",
         borderBottom: "1px solid #e0e0e0",
@@ -186,7 +191,6 @@ export default function ITAssistant() {
         ))}
       </div>
 
-      {/* Messages */}
       <div style={{
         flex: 1, overflowY: "auto", padding: "20px 16px",
         display: "flex", flexDirection: "column", gap: 12
@@ -256,7 +260,6 @@ export default function ITAssistant() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div style={{
         padding: "12px 16px", background: "#fff",
         borderTop: "1px solid #e0e0e0",
