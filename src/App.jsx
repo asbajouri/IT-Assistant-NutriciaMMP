@@ -165,7 +165,7 @@ export default function ITAssistant() {
         }}>🖥️</div>
         <div>
           <div style={{ fontWeight: 700, fontSize: 17 }}>دستیار IT شرکت Nutricia-mmp</div>
-          <div style={{ fontSize: 12, opacity: 0.85 }}>پشتیبانی فناوری اطلاعات • آنلاین</div>
+          <div style={{ fontSize: 12, opacity: 0.85 }}>پشتیبانی هوشمند فناوری اطلاعات • آنلاین</div>
         </div>
         <div style={{ marginRight: "auto", fontSize: 12, opacity: 0.7 }}>IT Support Bot v1.0</div>
       </div>
