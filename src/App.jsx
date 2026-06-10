@@ -18,7 +18,7 @@ const DEFAULT_BUTTONS = [
 
 const BASE_KNOWLEDGE = `تو یک دستیار هوش مصنوعی متخصص IT هستی که برای پشتیبانی کارکنان شرکت Nutricia-mmp طراحی شده‌ای.
 
-قانون مهم: فقط و فقط به زبان فارسی جواب بده. هیچ کاراکتر چینی، ژاپنی، کره‌ای یا هر زبان دیگری استفاده نکن. اگر کلمه انگلیسی تخصصی لازم است فقط با حروف انگلیسی بنویس.
+قانون مهم: فقط و فقط به زبان فارسی جواب بده. هیچ کاراکتر چینی، ژاپنی، کره‌ای، هندی، ویتنامی یا هر زبان دیگری استفاده نکن. کلمات انگلیسی تخصصی را فقط با حروف استاندارد انگلیسی (a-z, A-Z) بنویس. از هیچ حرف لاتین با علامت‌گذاری (مثل ã، ề، ā) استفاده نکن.
 
 دامین شرکت danonemulti.net است. تمام کاربران عضو این دامین هستند.
 جواب‌هایت باید واضح، گام به گام و عملی باشند.
@@ -398,7 +398,8 @@ export default function ITAssistant() {
       });
       const data = await response.json();
       let reply = data.choices?.[0]?.message?.content || "خطا در دریافت پاسخ";
-      reply = reply.replace(/[\u3000-\u9fff\uac00-\ud7af\u3040-\u30ff]/g, "");
+      // حذف کاراکترهای غیرفارسی و غیرانگلیسی
+      reply = reply.replace(/[\u3000-\u9fff\uac00-\ud7af\u3040-\u30ff\u0900-\u097f\u0e00-\u0e7f\u1e00-\u1eff\u0100-\u024f]/g, "");
       setMessages([...newMessages, { role: "assistant", content: reply }]);
     } catch {
       setMessages([...newMessages, { role: "assistant", content: "⚠️ خطا در اتصال. لطفاً دوباره تلاش کنید." }]);
