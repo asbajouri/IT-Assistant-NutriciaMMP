@@ -16,7 +16,7 @@ const DEFAULT_BUTTONS = [
   { label: "درخواست IT", q: "می‌خوام یه نرم‌افزار جدید نصب بشه، چیکار کنم؟" },
 ];
 
-const BASE_KNOWLEDGE = `تو یک دستیار هوش مصنوعی متخصص IT هستی که برای پشتیبانی کارکنان شرکت Nutricia-mmp طراحی شده‌ای.
+const BASE_KNOWLEDGE = `تو یک دستیار هوش مصنوعی متخصص IT هستی که برای پشتیبانی کارکنان شرکت Nutricia-MMP طراحی شده‌ای.
 
 قانون مهم: فقط و فقط به زبان فارسی جواب بده. هیچ کاراکتر چینی، ژاپنی، کره‌ای، هندی، ویتنامی یا هر زبان دیگری استفاده نکن. کلمات انگلیسی تخصصی را فقط با حروف استاندارد انگلیسی (a-z, A-Z) بنویس. از هیچ حرف لاتین با علامت‌گذاری (مثل ã، ề، ā) استفاده نکن.
 
@@ -349,7 +349,7 @@ function AdminPanel({ onClose }) {
 export default function ITAssistant() {
   const [messages, setMessages] = useState([{
     role: "assistant",
-    content: "سلام! من دستیار IT شرکت Nutricia-mmp هستم 👋\nهر سوالی درباره ویندوز، دامین، آفیس، شبکه یا درخواست‌های IT دارید بپرسید.",
+    content: "سلام! من دستیار IT شرکت Nutricia-MMP هستم 👋\nهر سوالی درباره ویندوز، دامین، آفیس، شبکه یا درخواست‌های IT دارید بپرسید.",
   }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -430,7 +430,7 @@ export default function ITAssistant() {
           display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22
         }}>🖥️</div>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 17 }}>دستیار IT شرکت Nutricia-mmp</div>
+          <div style={{ fontWeight: 700, fontSize: 17 }}>دستیار IT شرکت Nutricia-MMP</div>
           <div style={{ fontSize: 12, opacity: 0.85 }}>پشتیبانی هوشمند فناوری اطلاعات • آنلاین</div>
         </div>
         <button onClick={() => setShowAdminLogin(true)} style={{
