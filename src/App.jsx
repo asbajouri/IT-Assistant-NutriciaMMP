@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const GROQ_API_KEY = "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";
 const GEMINI_API_KEY = "AIzaSyAQ-Ab8RN6KexgC69JNHAsVOyY_OOuhrunzNKROEtqY6I7cbYwQ6kw";
