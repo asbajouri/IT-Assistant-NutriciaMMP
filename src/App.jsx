@@ -6,11 +6,6 @@ const ADMIN_PASSWORD = "Sb@332211";
 const SUPABASE_URL = "https://lphczmltctrqmkxktdzo.supabase.co";
 const SUPABASE_KEY = "sb_publishable_4zAcw2YmjJkFnpgZI-ZzLQ_EXznYJs_";
 
-// بارگذاری مجدد هر 5 دقیقه برای رفع cache در Teams
-if (typeof window !== "undefined") {
-  setTimeout(() => window.location.reload(), 5 * 60 * 1000);
-}
-
 const sbHeaders = {
   "Content-Type": "application/json",
   "apikey": SUPABASE_KEY,
@@ -28,7 +23,7 @@ const sbFetch = async (path, options = {}) => {
   return text ? JSON.parse(text) : [];
 };
 
-const BASE_KNOWLEDGE = `تو یک دستیار هوش مصنوعی متخصص IT هستی که برای پشتیبانی کارکنان شرکت Nutricia-mmp طراحی شده‌ای.
+const BASE_KNOWLEDGE = `تو یک دستیار هوش مصنوعی متخصص IT هستی که برای پشتیبانی کارکنان شرکت Nutricia-MMP طراحی شده‌ای.
 
 قانون مهم: فقط و فقط به زبان فارسی جواب بده. هیچ کاراکتر چینی، ژاپنی، کره‌ای، هندی، ویتنامی یا هر زبان دیگری استفاده نکن. کلمات انگلیسی تخصصی را فقط با حروف استاندارد انگلیسی (a-z, A-Z) بنویس. از هیچ حرف لاتین با علامت‌گذاری (مثل ã، ề، ā) استفاده نکن.
 
@@ -175,6 +170,18 @@ function AdminPanel({ onClose, onDataChanged }) {
     } catch { showMsg("⚠️ خطا در حذف"); }
   };
 
+  const moveBtn = async (index, direction) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= buttons.length) return;
+    const a = buttons[index], b = buttons[newIndex];
+    try {
+      await sbFetch(`buttons?id=eq.${a.id}`, { method: "PATCH", body: JSON.stringify({ sort_order: b.sort_order }) });
+      await sbFetch(`buttons?id=eq.${b.id}`, { method: "PATCH", body: JSON.stringify({ sort_order: a.sort_order }) });
+      await loadButtons();
+      onDataChanged();
+    } catch { showMsg("⚠️ خطا در تغییر ترتیب"); }
+  };
+
   const saveQA = async () => {
     if (!qaQ.trim() || !qaA.trim()) { showMsg("⚠️ سوال و جواب را پر کنید"); return; }
     setLoading(true);
@@ -249,8 +256,12 @@ function AdminPanel({ onClose, onDataChanged }) {
                 </div>
               </div>
               <h3 style={{ margin: "0 0 12px", fontSize: 15 }}>دکمه‌های فعلی ({buttons.length})</h3>
-              {buttons.map((btn) => (
+              {buttons.map((btn, idx) => (
                 <div key={btn.id} style={{ border: "1px solid #e0e0e0", borderRadius: 8, padding: "12px 14px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <button onClick={() => moveBtn(idx, -1)} disabled={idx === 0} style={{ padding: "2px 8px", background: idx === 0 ? "#eee" : "#f0f0f0", border: "1px solid #ddd", borderRadius: 4, cursor: idx === 0 ? "default" : "pointer", fontSize: 11 }}>▲</button>
+                    <button onClick={() => moveBtn(idx, 1)} disabled={idx === buttons.length - 1} style={{ padding: "2px 8px", background: idx === buttons.length - 1 ? "#eee" : "#f0f0f0", border: "1px solid #ddd", borderRadius: 4, cursor: idx === buttons.length - 1 ? "default" : "pointer", fontSize: 11 }}>▼</button>
+                  </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 600, color: "#0078d4", marginBottom: 4 }}>🔘 {btn.label}</div>
                     <div style={{ color: "#666", fontSize: 12 }}>↪ {btn.question}</div>
@@ -297,7 +308,7 @@ function AdminPanel({ onClose, onDataChanged }) {
 }
 
 export default function ITAssistant() {
-  const [messages, setMessages] = useState([{ role: "assistant", content: "سلام! من دستیار IT شرکت Nutricia-mmp هستم 👋\nهر سوالی درباره ویندوز، دامین، آفیس، شبکه یا درخواست‌های IT دارید بپرسید." }]);
+  const [messages, setMessages] = useState([{ role: "assistant", content: "سلام! من دستیار IT شرکت Nutricia-MMP هستم 👋\nهر سوالی درباره ویندوز، دامین، آفیس، شبکه یا درخواست‌های IT دارید بپرسید." }]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -381,7 +392,7 @@ export default function ITAssistant() {
       <div style={{ background: "linear-gradient(135deg, #0078d4, #005a9e)", color: "white", padding: "16px 20px", display: "flex", alignItems: "center", gap: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
         <div style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🖥️</div>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 17 }}>دستیار IT شرکت Nutricia-mmp</div>
+          <div style={{ fontWeight: 700, fontSize: 17 }}>دستیار IT شرکت Nutricia-MMP</div>
           <div style={{ fontSize: 12, opacity: 0.85 }}>پشتیبانی هوشمند فناوری اطلاعات • آنلاین</div>
         </div>
         <button onClick={() => setShowAdminLogin(true)} style={{ marginRight: "auto", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "white", padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>🔐 Login</button>
