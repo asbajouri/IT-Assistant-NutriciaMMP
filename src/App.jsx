@@ -380,40 +380,52 @@ export default function ITAssistant() {
   const cleanText = (text) => text.replace(/[\u3000-\u9fff\uac00-\ud7af\u3040-\u30ff\u0900-\u097f\u0e00-\u0e7f\u1e00-\u1eff\u0100-\u024f\u0400-\u04ff]/g, "");
 
   const tryGroq = async (msgs, systemPrompt) => {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
-      body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 1000, messages: [{ role: "system", content: systemPrompt }, ...msgs] }),
-    });
+    let res;
+    try {
+      res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
+        body: JSON.stringify({ model: "llama-3.3-70b-versatile", max_tokens: 1000, messages: [{ role: "system", content: systemPrompt }, ...msgs] }),
+      });
+    } catch (e) { throw new Error(`Groq network: ${e.message}`); }
     const data = await res.json();
-    if (!res.ok || !data.choices?.[0]?.message?.content) throw new Error("Groq failed");
+    if (!res.ok) throw new Error(`Groq HTTP ${res.status}: ${JSON.stringify(data).slice(0, 200)}`);
+    if (!data.choices?.[0]?.message?.content) throw new Error(`Groq no content`);
     return data.choices[0].message.content;
   };
 
   const tryGemini = async (msgs, systemPrompt) => {
     const contents = msgs.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] }, contents, generationConfig: { maxOutputTokens: 1000 } }),
-    });
+    let res;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ system_instruction: { parts: [{ text: systemPrompt }] }, contents, generationConfig: { maxOutputTokens: 1000 } }),
+      });
+    } catch (e) { throw new Error(`Gemini network: ${e.message}`); }
     const data = await res.json();
-    if (!res.ok || !data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error("Gemini failed");
+    if (!res.ok) throw new Error(`Gemini HTTP ${res.status}: ${JSON.stringify(data).slice(0, 200)}`);
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) throw new Error(`Gemini no content`);
     return data.candidates[0].content.parts[0].text;
   };
 
   const tryOpenRouter = async (msgs, systemPrompt) => {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENROUTER_API_KEY}` },
-      body: JSON.stringify({
-        model: "meta-llama/llama-3.3-70b-instruct:free",
-        max_tokens: 1000,
-        messages: [{ role: "system", content: systemPrompt }, ...msgs],
-      }),
-    });
+    let res;
+    try {
+      res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENROUTER_API_KEY}` },
+        body: JSON.stringify({
+          model: "meta-llama/llama-3.3-70b-instruct:free",
+          max_tokens: 1000,
+          messages: [{ role: "system", content: systemPrompt }, ...msgs],
+        }),
+      });
+    } catch (e) { throw new Error(`OpenRouter network: ${e.message}`); }
     const data = await res.json();
-    if (!res.ok || !data.choices?.[0]?.message?.content) throw new Error("OpenRouter failed");
+    if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status}: ${JSON.stringify(data).slice(0, 200)}`);
+    if (!data.choices?.[0]?.message?.content) throw new Error(`OpenRouter no content: ${JSON.stringify(data).slice(0, 200)}`);
     return data.choices[0].message.content;
   };
 
@@ -425,20 +437,29 @@ export default function ITAssistant() {
     setMessages(newMessages);
     if (userId) saveMessage(userId, "user", userText);
     setLoading(true);
+    const errors = [];
     try {
       const systemPrompt = await buildSystemPrompt();
       const apiMsgs = newMessages.map(m => ({ role: m.role, content: m.content }));
       let reply = "";
       try { reply = await tryOpenRouter(apiMsgs, systemPrompt); }
-      catch {
+      catch (e1) {
+        errors.push(`1) ${e1.message}`);
         try { reply = await tryGroq(apiMsgs, systemPrompt); }
-        catch { reply = await tryGemini(apiMsgs, systemPrompt); }
+        catch (e2) {
+          errors.push(`2) ${e2.message}`);
+          try { reply = await tryGemini(apiMsgs, systemPrompt); }
+          catch (e3) {
+            errors.push(`3) ${e3.message}`);
+            throw new Error(errors.join(" | "));
+          }
+        }
       }
       reply = cleanText(reply);
       setMessages([...newMessages, { role: "assistant", content: reply }]);
       if (userId) saveMessage(userId, "assistant", reply);
-    } catch {
-      const errMsg = "⚠️ خطا در اتصال. لطفاً دوباره تلاش کنید.";
+    } catch (err) {
+      const errMsg = `⚠️ خطا در اتصال:\n${err.message}`;
       setMessages([...newMessages, { role: "assistant", content: errMsg }]);
     } finally { setLoading(false); }
   };
