@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 
 const GROQ_API_KEY = "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";
 const GEMINI_API_KEY = "AIzaSyAQ-Ab8RN6KexgC69JNHAsVOyY_OOuhrunzNKROEtqY6I7cbYwQ6kw";
-const OPENROUTER_API_KEY = "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";
+const OPENROUTER_API_KEY = "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";
 const XAI_API_KEY = "xai-eKtgOay3itIO6goyK4Eu0F9TOsJISTfSoTWLHPdILf7WzgNoefvU0992Tg6t2oFfiN2W8WqUVWtY52Tk";
 const ADMIN_PASSWORD = "Sb@332211";
 const SUPABASE_URL = "https://lphczmltctrqmkxktdzo.supabase.co";
@@ -449,7 +449,7 @@ export default function ITAssistant() {
       res = await fetch("https://api.x.ai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${XAI_API_KEY}` },
-        body: JSON.stringify({ model: "grok-beta", max_tokens: 1000, messages: [{ role: "system", content: systemPrompt }, ...msgs] }),
+        body: JSON.stringify({ model: "grok-3-latest", max_tokens: 1000, messages: [{ role: "system", content: systemPrompt }, ...msgs] }),
       });
     } catch (e) { throw new Error(`XAI network: ${e.message}`); }
     const data = await res.json();
