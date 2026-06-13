@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 
 const GROQ_API_KEY = "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";
 const GEMINI_API_KEY = "AIzaSyAQ-Ab8RN6KexgC69JNHAsVOyY_OOuhrunzNKROEtqY6I7cbYwQ6kw";
+const OPENROUTER_API_KEY = "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";
 const ADMIN_PASSWORD = "Sb@332211";
 const SUPABASE_URL = "https://lphczmltctrqmkxktdzo.supabase.co";
 const SUPABASE_KEY = "sb_publishable_4zAcw2YmjJkFnpgZI-ZzLQ_EXznYJs_";
@@ -308,7 +309,9 @@ function AdminPanel({ onClose, onDataChanged }) {
 }
 
 export default function ITAssistant() {
-  const [messages, setMessages] = useState([{ role: "assistant", content: "سلام! من دستیار IT شرکت Nutricia-MMP هستم 👋\nهر سوالی درباره ویندوز، دامین، آفیس، شبکه یا درخواست‌های IT دارید بپرسید." }]);
+  const WELCOME = { role: "assistant", content: "سلام! من دستیار IT شرکت Nutricia-MMP هستم 👋\nهر سوالی درباره ویندوز، دامین، آفیس، شبکه یا درخواست‌های IT دارید بپرسید." };
+  const [messages, setMessages] = useState([WELCOME]);
+  const [userId, setUserId] = useState(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -320,6 +323,43 @@ export default function ITAssistant() {
 
   useEffect(() => { loadButtons(); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  useEffect(() => {
+    const init = async () => {
+      const uid = await getUserId();
+      setUserId(uid);
+      try {
+        const history = await sbFetch(`chat_history?user_id=eq.${encodeURIComponent(uid)}&order=id&limit=100`);
+        if (history.length > 0) {
+          setMessages(history.map(h => ({ role: h.role, content: h.content })));
+        }
+      } catch {}
+    };
+    init();
+  }, []);
+
+  const getUserId = async () => {
+    try {
+      if (window.microsoftTeams) {
+        await window.microsoftTeams.app.initialize();
+        const context = await window.microsoftTeams.app.getContext();
+        const id = context?.user?.userPrincipalName || context?.user?.id;
+        if (id) return id;
+      }
+    } catch {}
+    let id = localStorage.getItem("it_assistant_user_id");
+    if (!id) {
+      id = "guest_" + Math.random().toString(36).slice(2);
+      localStorage.setItem("it_assistant_user_id", id);
+    }
+    return id;
+  };
+
+  const saveMessage = async (uid, role, content) => {
+    try {
+      await sbFetch("chat_history", { method: "POST", body: JSON.stringify({ user_id: uid, role, content }) });
+    } catch {}
+  };
 
   const loadButtons = async () => {
     try {
@@ -362,23 +402,44 @@ export default function ITAssistant() {
     return data.candidates[0].content.parts[0].text;
   };
 
+  const tryOpenRouter = async (msgs, systemPrompt) => {
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENROUTER_API_KEY}` },
+      body: JSON.stringify({
+        model: "meta-llama/llama-3.3-70b-instruct:free",
+        max_tokens: 1000,
+        messages: [{ role: "system", content: systemPrompt }, ...msgs],
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.choices?.[0]?.message?.content) throw new Error("OpenRouter failed");
+    return data.choices[0].message.content;
+  };
+
   const sendMessage = async (text) => {
     const userText = text || input.trim();
     if (!userText || loading) return;
     setInput("");
     const newMessages = [...messages, { role: "user", content: userText }];
     setMessages(newMessages);
+    if (userId) saveMessage(userId, "user", userText);
     setLoading(true);
     try {
       const systemPrompt = await buildSystemPrompt();
       const apiMsgs = newMessages.map(m => ({ role: m.role, content: m.content }));
       let reply = "";
-      try { reply = await tryGroq(apiMsgs, systemPrompt); }
-      catch { reply = await tryGemini(apiMsgs, systemPrompt); }
+      try { reply = await tryOpenRouter(apiMsgs, systemPrompt); }
+      catch {
+        try { reply = await tryGroq(apiMsgs, systemPrompt); }
+        catch { reply = await tryGemini(apiMsgs, systemPrompt); }
+      }
       reply = cleanText(reply);
       setMessages([...newMessages, { role: "assistant", content: reply }]);
+      if (userId) saveMessage(userId, "assistant", reply);
     } catch {
-      setMessages([...newMessages, { role: "assistant", content: "⚠️ خطا در اتصال. لطفاً دوباره تلاش کنید." }]);
+      const errMsg = "⚠️ خطا در اتصال. لطفاً دوباره تلاش کنید.";
+      setMessages([...newMessages, { role: "assistant", content: errMsg }]);
     } finally { setLoading(false); }
   };
 
@@ -396,6 +457,12 @@ export default function ITAssistant() {
           <div style={{ fontSize: 12, opacity: 0.85 }}>پشتیبانی هوشمند فناوری اطلاعات • آنلاین</div>
         </div>
         <button onClick={() => setShowAdminLogin(true)} style={{ marginRight: "auto", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "white", padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>🔐 Login</button>
+        <button onClick={async () => {
+          setMessages([WELCOME]);
+          if (userId) {
+            try { await sbFetch(`chat_history?user_id=eq.${encodeURIComponent(userId)}`, { method: "DELETE" }); } catch {}
+          }
+        }} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "white", padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontFamily: "inherit" }}>🗑️ پاک کردن چت</button>
       </div>
 
       <div style={{ padding: "10px 16px", background: "#fff", borderBottom: "1px solid #e0e0e0", display: "flex", gap: 8, flexWrap: "wrap" }}>
