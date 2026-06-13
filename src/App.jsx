@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 const GROQ_API_KEY = "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";
 const GEMINI_API_KEY = "AIzaSyAQ-Ab8RN6KexgC69JNHAsVOyY_OOuhrunzNKROEtqY6I7cbYwQ6kw";
 const OPENROUTER_API_KEY = "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";
+const XAI_API_KEY = "xai-eKtgOay3itIO6goyK4Eu0F9TOsJISTfSoTWLHPdILf7WzgNoefvU0992Tg6t2oFfiN2W8WqUVWtY52Tk";
 const ADMIN_PASSWORD = "Sb@332211";
 const SUPABASE_URL = "https://lphczmltctrqmkxktdzo.supabase.co";
 const SUPABASE_KEY = "sb_publishable_4zAcw2YmjJkFnpgZI-ZzLQ_EXznYJs_";
@@ -442,6 +443,21 @@ export default function ITAssistant() {
     throw new Error(`OpenRouter all failed: ${errors.join(", ")}`);
   };
 
+  const tryXAI = async (msgs, systemPrompt) => {
+    let res;
+    try {
+      res = await fetch("https://api.x.ai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${XAI_API_KEY}` },
+        body: JSON.stringify({ model: "grok-2-latest", max_tokens: 1000, messages: [{ role: "system", content: systemPrompt }, ...msgs] }),
+      });
+    } catch (e) { throw new Error(`XAI network: ${e.message}`); }
+    const data = await res.json();
+    if (!res.ok) throw new Error(`XAI HTTP ${res.status}: ${JSON.stringify(data).slice(0, 200)}`);
+    if (!data.choices?.[0]?.message?.content) throw new Error(`XAI no content`);
+    return data.choices[0].message.content;
+  };
+
   const sendMessage = async (text) => {
     const userText = text || input.trim();
     if (!userText || loading) return;
@@ -455,16 +471,20 @@ export default function ITAssistant() {
       const systemPrompt = await buildSystemPrompt();
       const apiMsgs = newMessages.map(m => ({ role: m.role, content: m.content }));
       let reply = "";
-      try { reply = await tryOpenRouter(apiMsgs, systemPrompt); }
-      catch (e1) {
-        errors.push(`1) ${e1.message}`);
-        try { reply = await tryGroq(apiMsgs, systemPrompt); }
-        catch (e2) {
-          errors.push(`2) ${e2.message}`);
-          try { reply = await tryGemini(apiMsgs, systemPrompt); }
-          catch (e3) {
-            errors.push(`3) ${e3.message}`);
-            throw new Error(errors.join(" | "));
+      try { reply = await tryXAI(apiMsgs, systemPrompt); }
+      catch (e0) {
+        errors.push(`0) ${e0.message}`);
+        try { reply = await tryOpenRouter(apiMsgs, systemPrompt); }
+        catch (e1) {
+          errors.push(`1) ${e1.message}`);
+          try { reply = await tryGroq(apiMsgs, systemPrompt); }
+          catch (e2) {
+            errors.push(`2) ${e2.message}`);
+            try { reply = await tryGemini(apiMsgs, systemPrompt); }
+            catch (e3) {
+              errors.push(`3) ${e3.message}`);
+              throw new Error(errors.join(" | "));
+            }
           }
         }
       }
