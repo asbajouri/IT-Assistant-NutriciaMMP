@@ -449,7 +449,7 @@ export default function ITAssistant() {
       res = await fetch("https://api.x.ai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${XAI_API_KEY}` },
-        body: JSON.stringify({ model: "grok-2-latest", max_tokens: 1000, messages: [{ role: "system", content: systemPrompt }, ...msgs] }),
+        body: JSON.stringify({ model: "grok-2-1212", max_tokens: 1000, messages: [{ role: "system", content: systemPrompt }, ...msgs] }),
       });
     } catch (e) { throw new Error(`XAI network: ${e.message}`); }
     const data = await res.json();
