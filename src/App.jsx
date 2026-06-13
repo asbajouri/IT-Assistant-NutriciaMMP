@@ -410,23 +410,36 @@ export default function ITAssistant() {
     return data.candidates[0].content.parts[0].text;
   };
 
+  const OPENROUTER_MODELS = [
+    "google/gemini-2.0-flash-exp:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen-2.5-72b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "google/gemma-2-9b-it:free",
+  ];
+
   const tryOpenRouter = async (msgs, systemPrompt) => {
-    let res;
-    try {
-      res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENROUTER_API_KEY}` },
-        body: JSON.stringify({
-          model: "meta-llama/llama-3.3-70b-instruct:free",
-          max_tokens: 1000,
-          messages: [{ role: "system", content: systemPrompt }, ...msgs],
-        }),
-      });
-    } catch (e) { throw new Error(`OpenRouter network: ${e.message}`); }
-    const data = await res.json();
-    if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status}: ${JSON.stringify(data).slice(0, 200)}`);
-    if (!data.choices?.[0]?.message?.content) throw new Error(`OpenRouter no content: ${JSON.stringify(data).slice(0, 200)}`);
-    return data.choices[0].message.content;
+    const errors = [];
+    for (const model of OPENROUTER_MODELS) {
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${OPENROUTER_API_KEY}` },
+          body: JSON.stringify({
+            model,
+            max_tokens: 1000,
+            messages: [{ role: "system", content: systemPrompt }, ...msgs],
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) { errors.push(`${model}: HTTP ${res.status}`); continue; }
+        if (!data.choices?.[0]?.message?.content) { errors.push(`${model}: no content`); continue; }
+        return data.choices[0].message.content;
+      } catch (e) {
+        errors.push(`${model}: ${e.message}`);
+      }
+    }
+    throw new Error(`OpenRouter all failed: ${errors.join(", ")}`);
   };
 
   const sendMessage = async (text) => {
